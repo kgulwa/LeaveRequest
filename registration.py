@@ -1,9 +1,13 @@
+import string
+import secrets
 #Here we register the company employees, and generate their Employee IDs.
 #Store the generated Ids in a list to be accesed later.
+#generate a password the employee will use to access their account later
+
+employee_list = []
 
 def employee_name():
-    employee_name = input("Enter your name: ")
-    return employee_name
+    return input ("Enter your name:  ")
 
 def employee_id_number():
     while True:
@@ -21,15 +25,19 @@ def generate_employee_id(name, id_no):
     return employee_id
 
 
-def existing_employee_id(employee_id):
-    while True:
-        existing_employee_id = []
-        existing_employee_id.append(employee_id)
-
-    if employee_id not in existing_employee_id:
-        print("This is not a valid Employee ID. Try Again")
+def existing_employee(employee_id , employee_list):
+    if employee_id not in employee_list:
+        print("This is not a valid Employee ID, double check and try again.")
     else:
-        return employee_id
+        return True
+
+
         
+def generate_password(length = 12):
+    alphabet = string.ascii_letters + string.digits
+    password = ''.join(secrets.choice(alphabet)for _ in range(length))
+
+    return password
+
     
 
