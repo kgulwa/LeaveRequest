@@ -40,4 +40,4 @@ def authenticate_google_account():
 def get_google_calendar_service():
     creds = authenticate_google_account() # Authenticate user
     service = googleapiclient.discovery.build("calendar", "v3", credentials=creds) #create service object
-    return service 
+    return service
