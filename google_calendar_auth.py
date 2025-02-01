@@ -31,6 +31,13 @@ def authenticate_google_account():
 
             creds = flow.run_local_server(port=0)# opens window for authentication
 
-        
+        with open("token.pickle", "wb") as token:
+            pickle.dump(creds, token)
+
+    return creds
            
 
+def get_google_calendar_service():
+    creds = authenticate_google_account() # Authenticate user
+    service = googleapiclient.discovery.build("calendar", "v3", credentials=creds) #create service object
+    return service 
