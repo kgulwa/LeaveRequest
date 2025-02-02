@@ -70,4 +70,4 @@ def forgot_password(employee_id):
 
     employee_passwords[employee_id] = temp_password
 
-    print(f"Your temporary password is: {temp_password}. Please log in and reset your password.")
+    print(f"Your temporary password is: {temp_password}. Please log in and reset your password. Okay?")
