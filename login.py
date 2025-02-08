@@ -13,5 +13,4 @@ def login(employee_id, existing_employee_id):
 def welcome_message(employee_name): # message to be displayed after a succesful login
     print(f"Good Day {employee_name}. What would you like to do today? ")
 
-    #client id for google calendar API: 31247821616-u7c0nl1dmj3a3p8g1567o29aa183dgsn.apps.googleusercontent.com
     
