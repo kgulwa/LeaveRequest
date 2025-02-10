@@ -1,32 +1,45 @@
 import os
 import datetime
-from google.oauth2.credentials import Credentials
+from google.oauth2.creds import creds
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from google.auth.transport.request import Request 
+
 
 # Define API settings
 CLIENT_SECRET_FILE = "client_secret.json"
-SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
-TOKEN_FILE = "token.json"
+SCOPES = ["https://www.googleapis.com/auth/calendar"]
+
+
 
 def authenticate_google_calendar():
     """Authenticate and return Google Calendar API service."""
-    credentials = None
+    creds = None
 
-    # Load existing credentials if they exist
-    if os.path.exists(TOKEN_FILE):
-        credentials = Credentials.from_authorized_user_file(TOKEN_FILE)
+    if os.path.exists("token.json"): #Loads existing credentials if there are any
+        creds = Credentials.from_authorized_user_file("token.json")
 
-    # If credentials are invalid or don't exist, perform authentication
-    if not credentials or not credentials.valid:
-        flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
-        credentials = flow.run_local_server(port=0)
+    if not creds or not creds.valid: # performs authentication if invalid credentials are provided or they do not exist at all
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
 
-        # Save credentials for future use
-        with open(TOKEN_FILE, "w") as token:
-            token.write(credentials.to_json())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file("client_secret.json", SCOPES)
+            creds = flow.run_local_server(port= 0)
 
-    return build("calendar", "v3", credentials=credentials)
+        with open("token.json", "w") as token: #saves credentials for future purposes
+            token.write(creds.to_json())
+
+    try:
+        service = build("calendar", "v3", credentials=creds)
+
+
+        now = dt.datetime.now().isoformat() + "Z"
+
+        events_result = service.events().list(calendarId = "primary", timeMin = now, maxResults =10, singleEvents = True, OrderBy = "startTime")
+
+    except HttpError as error:
+        print("An Error occured:", error)
 
 def view_calendar():
     """Retrieve and display upcoming events from Google Calendar."""
