@@ -1,13 +1,26 @@
+import registration
 # This is where employees apply for leave
 #I need a list of valid leaves
 #Application statuses
 #Leave balance tracker
 
 
-valid_leave = ["Sick Leave", "Family Responsibility Leave","Maternity Leave","Paternity Leave","Annual Leave",]
-request_status = ["Succesful", "Unsuccesful", "Pending"]
+valid_leave = ["Sick Leave", "Family Responsibility Leave","Maternity Leave","Paternity Leave","Annual Leave",] #list of valid requests
 
-def leave_application():
+request_status = ["Succesful", "Unsuccesful", "Pending"] # list of leave statuses
+
+
+leave_entitlement = {
+    "Annual Leave": 21,
+    "Sick Leave" : 30,
+    "Maternity Leave" : 120,
+    "Family Responsibility Leave": 3,
+} # Dictionary for the leave entitlements in days
+
+employee_leave_balance = {}
+
+def leave_application(employee_name,valid_leave,days_requested):
+
     while True :
         
         leave_request = input("Please enter the Leave you would like to apply for: ")
@@ -17,6 +30,10 @@ def leave_application():
 
         else:
             print("Please double check the list of valid Leave Requests and enter a valid request")
+
+
+    if employee_name not in employee_leave_balance:
+        print()
 
 
         
