@@ -1,41 +1,30 @@
 import registration
-# This is where employees apply for leave
-#I need a list of valid leaves
-#Application statuses
-#Leave balance tracker
 
+valid_leave = ["Sick Leave", "Family Responsibility Leave", "Martenity Leave", "Partenity Leave", "Annual Leave"]
 
-valid_leave = ["Sick Leave", "Family Responsibility Leave","Maternity Leave","Paternity Leave","Annual Leave",] #list of valid requests
+def leave_application(employee_id, leave_type, days_requested ):
 
-request_status = ["Succesful", "Unsuccesful", "Pending"] # list of leave statuses
+    if employee_id not in registration.employee_leave_balance:
+        print("Employee not found. Please register first")
+        return
 
+    if leave_type not in valid_leave:
+        print("Invalid leave type. Please double check the valid leave list.")
+        return
 
-leave_entitlement = {
-    "Annual Leave": 21,
-    "Sick Leave" : 30,
-    "Maternity Leave" : 120,
-    "Family Responsibility Leave": 3,
-} # Dictionary for the leave entitlements in days
+    if registration.employee_leave_balance[employee_id][leave_type] >= days_requested:
+        registration.employee_leave_balance[employee_id][leave_type] -= days_requested
+        print(f"Leave approved! {employee_id} haas {registration.employee_leave_balance[employee_id][leave_type]} days left for {leave_type}.")
 
-employee_leave_balance = {}
+    else:
+        print(f"Insufficient leave balance. {employee_id} has only {registration.employee_leave_balance[employee_id][leave_type]} days left.")
 
-def leave_application(employee_name,valid_leave,days_requested):
+def check_leave_balance(employee_id):
+    if employee_id not in registration.employee_leave_balance:
+        print("Employee not found in the system. Please register first.")
+        return
 
-    while True :
-        
-        leave_request = input("Please enter the Leave you would like to apply for: ")
+    print(f"Leave balance for {employee_id}: ")
+    for leave_type, days_left in registration.employee_leave_balance[employee_id].items():
+        print (f"{leave_type}: {days_left} days remaining.")
 
-        if leave_request in valid_leave:
-            return leave_request
-
-        else:
-            print("Please double check the list of valid Leave Requests and enter a valid request")
-
-
-    if employee_name not in employee_leave_balance:
-        print()
-
-
-        
-if __name__ == "__main__": 
-    leave_application()      
