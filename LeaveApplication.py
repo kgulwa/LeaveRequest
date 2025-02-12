@@ -119,6 +119,19 @@ def check_leave_balance(employee_id):
     for leave_type, days_left in registration.employee_leave_balance[employee_id].items():
         print(f"{leave_type}: {days_left} days remaining.")
 
+def get_leave_history(employee_id):
+    connection = sqlite3.connect('leave_request.db')
+    cursor = connection.cursor()
+
+    cursor.execute('''SELECT leave_type, days requested, start_date, end_date
+                    FROM leave_requests WHERE employee_id = ? ''',(employee_id,))
+
+    rows = cursor.fetchall()
+
+    for row in rows:
+        print(f"Leave Type: {row[0]}, Days Requested: {row[1]}, Start Date: {row[2]}, End Date: {row[3]}")
+
+    connection.close()
 
 if __name__ == "__main__":
     empl_id = input("Enter your Employee ID to apply for leave: ").strip()
