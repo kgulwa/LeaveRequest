@@ -62,3 +62,14 @@ def register_leave_balance(employee_id):
     if employee_id not in employee_leave_balance:
         employee_leave_balance[employee_id] = leave_entitlement.copy()
         print(f"Leave balance initialized for {employee_id}.")
+
+
+def register_employee(employee_id, nam, department):
+    connection = sqlite3.connect('leave_request.db')
+    cursor = connection.cursor()
+
+    cursor.execute(''' INSERT INTO employees(id, name, department)
+    VALUES(?,?,?)''',(employee_id, name< department))
+
+    connection.commit()
+    connection.close()
