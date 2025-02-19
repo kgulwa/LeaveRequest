@@ -1,24 +1,60 @@
+import os
+import sqlite3
 import registration
 import datetime
+import string
+import secrets
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
 from dotenv import load_dotenv
-import os
 
-# Load environment variables from the .env file
+# Load environment variables
 load_dotenv()
-
-# Fetch credentials from environment variables
 client_id = os.getenv("GOOGLE_CLIENT_ID")
 client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
-# Corrected list of valid leaves
-valid_leave = ["Sick Leave", "Family Responsibility Leave", "Maternity Leave", "Paternity Leave", "Annual Leave"]
+# Leave entitlements
+leave_entitlement = {
+    "Annual Leave": 21,
+    "Sick Leave": 30,
+    "Maternity Leave": 120,
+    "Family Responsibility Leave": 3,
+}
 
+# Employee Data Storage
+employee_list = []
+employee_passwords = {}
+employee_leave_balance = {}
+
+# Database Setup
+def create_database():
+    connection = sqlite3.connect('leave_request.db')
+    cursor = connection.cursor()
+
+    cursor.execute(''' CREATE TABLE IF NOT EXISTS employees(
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        department TEXT
+    )''')
+
+    cursor.execute(''' CREATE TABLE IF NOT EXISTS leave_requests(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_id TEXT,
+        leave_type TEXT,
+        days_requested INTEGER,
+        start_date TEXT,
+        end_date TEXT,
+        FOREIGN KEY(employee_id) REFERENCES employees(id)
+    )''')
+
+    connection.commit()
+    connection.close()
+
+# Google Calendar Authentication
 def authenticate_google_calendar():
-    """Authenticate and return Google Calendar API service."""
     creds = None
     if os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json")
@@ -43,122 +79,99 @@ def authenticate_google_calendar():
             token.write(creds.to_json())
 
     try:
-        service = build("calendar", "v3", credentials=creds)
-        return service
+        return build("calendar", "v3", credentials=creds)
     except Exception as error:
-        print("An error occurred while authenticating:", error)
+        print("Google Calendar authentication failed:", error)
         return None
 
-
-def leave_application(employee_id, leave_type, days_requested, start_date, end_date):
-    # Check if employee exists
-    if employee_id not in registration.employee_leave_balance:
-        print("Error: Employee not found. Please register first.")
-        return
-
-    # Keep prompting the user until a valid leave type is entered
-    while leave_type not in valid_leave:
-        print("Error: Invalid leave type. Please choose from the following options:")
-        for leave in valid_leave:
-            print(f"- {leave}")
-        leave_type = input("Enter a valid leave type: ").strip()
-
-    # Check if requested days are valid
-    while True:
-        if days_requested <= 0:
-            print("Error: Number of days must be greater than zero.")
-            days_requested = int(input("Enter the number of days again: "))
-        else:
-            break
-
-    # Ensure the employee has a leave record for this leave type
-    if leave_type not in registration.employee_leave_balance[employee_id]:
-        print(f"Error: No leave record found for {leave_type}.")
-        return
-
-    # Check if employee has enough leave balance
-    if registration.employee_leave_balance[employee_id][leave_type] >= days_requested:
-        registration.employee_leave_balance[employee_id][leave_type] -= days_requested
-        print(f"Leave approved! {employee_id} now has {registration.employee_leave_balance[employee_id][leave_type]} days left for {leave_type}.")
-
-        # Create leave event in Google Calendar
-        service = authenticate_google_calendar()
-        if service:
-            create_leave_event(service, employee_id, leave_type, start_date, end_date)
-    else:
-        print(f"Error: Insufficient leave balance. {employee_id} has only {registration.employee_leave_balance[employee_id][leave_type]} days left.")
-
-
-def create_leave_event(service, employee_name, leave_type, start_date, end_date):
-    event = {
-        "summary": f"{employee_name} - {leave_type}",
-        "start": {
-            "dateTime": start_date,
-            "timeZone": "UTC",
-        },
-        "end": {
-            "dateTime": end_date,
-            "timeZone": "UTC",
-        },
-    }
-
-    try:
-        # Creating the event in Google Calendar
-        event_result = service.events().insert(calendarId="primary", body=event).execute()
-        print(f"Leave event created: {event_result['summary']} from {event_result['start']['dateTime']} to {event_result['end']['dateTime']}")
-    except Exception as e:
-        print(f"An error occurred while creating the leave event: {e}")
-
-
-def check_leave_balance(employee_id):
-    if employee_id not in registration.employee_leave_balance:
-        print("Error: Employee not found in the system. Please register first.")
-        return
-
-    print(f"\nLeave balance for {employee_id}:")
-    for leave_type, days_left in registration.employee_leave_balance[employee_id].items():
-        print(f"{leave_type}: {days_left} days remaining.")
-
-def get_leave_history(employee_id):
+# Employee Registration
+def register_employee(employee_id, name, department):
     connection = sqlite3.connect('leave_request.db')
     cursor = connection.cursor()
 
-    cursor.execute('''SELECT leave_type, days requested, start_date, end_date
-                    FROM leave_requests WHERE employee_id = ? ''',(employee_id,))
-
-    rows = cursor.fetchall()
-
-    for row in rows:
-        print(f"Leave Type: {row[0]}, Days Requested: {row[1]}, Start Date: {row[2]}, End Date: {row[3]}")
-
+    cursor.execute('''INSERT INTO employees(id, name, department) VALUES (?, ?, ?)''', (employee_id, name, department))
+    connection.commit()
     connection.close()
 
+    employee_list.append(employee_id)
+    employee_leave_balance[employee_id] = leave_entitlement.copy()
+    print(f"Employee {name} registered successfully!")
+
+# Leave Application
+def apply_leave(employee_id, leave_type, days_requested, start_date, end_date):
+    if employee_id not in employee_list:
+        print("Error: Employee not found. Please register first.")
+        return
+
+    if leave_type not in leave_entitlement:
+        print("Error: Invalid leave type.")
+        return
+
+    if days_requested <= 0:
+        print("Error: Number of days must be greater than zero.")
+        return
+
+    if employee_leave_balance[employee_id][leave_type] < days_requested:
+        print("Error: Insufficient leave balance.")
+        return
+    
+    employee_leave_balance[employee_id][leave_type] -= days_requested
+    print(f"Leave approved! {employee_id} has {employee_leave_balance[employee_id][leave_type]} days left for {leave_type}.")
+    
+    connection = sqlite3.connect('leave_request.db')
+    cursor = connection.cursor()
+    cursor.execute('''INSERT INTO leave_requests(employee_id, leave_type, days_requested, start_date, end_date) VALUES (?, ?, ?, ?, ?)''',
+                   (employee_id, leave_type, days_requested, start_date, end_date))
+    connection.commit()
+    connection.close()
+    
+    service = authenticate_google_calendar()
+    if service:
+        create_leave_event(service, employee_id, leave_type, start_date, end_date)
+
+# Create Google Calendar Event
+def create_leave_event(service, employee_name, leave_type, start_date, end_date):
+    event = {
+        "summary": f"{employee_name} - {leave_type}",
+        "start": {"dateTime": start_date, "timeZone": "UTC"},
+        "end": {"dateTime": end_date, "timeZone": "UTC"},
+    }
+    try:
+        event_result = service.events().insert(calendarId="primary", body=event).execute()
+        print(f"Leave event created: {event_result['summary']} from {event_result['start']['dateTime']} to {event_result['end']['dateTime']}")
+    except Exception as e:
+        print("Failed to create event:", e)
+
+# Check Leave Balance
+def check_leave_balance(employee_id):
+    if employee_id not in employee_list:
+        print("Error: Employee not found.")
+        return
+    print(f"\nLeave balance for {employee_id}:")
+    for leave_type, days_left in employee_leave_balance[employee_id].items():
+        print(f"{leave_type}: {days_left} days remaining.")
+
+# Get Leave History
+def get_leave_history(employee_id):
+    connection = sqlite3.connect('leave_request.db')
+    cursor = connection.cursor()
+    cursor.execute('''SELECT leave_type, days_requested, start_date, end_date FROM leave_requests WHERE employee_id = ?''', (employee_id,))
+    rows = cursor.fetchall()
+    connection.close()
+    
+    if not rows:
+        print("No leave history found.")
+    else:
+        for row in rows:
+            print(f"Leave Type: {row[0]}, Days: {row[1]}, Start: {row[2]}, End: {row[3]}")
+
 if __name__ == "__main__":
-    empl_id = input("Enter your Employee ID to apply for leave: ").strip()
-
-    # Keep asking for leave type until a valid one is provided
-    leave_type = input("Enter the type of leave you are applying for: ").strip()
-    while leave_type not in valid_leave:
-        print("Error: Invalid leave type. Please choose from the following options:")
-        for leave in valid_leave:
-            print(f"- {leave}")
-        leave_type = input("Enter a valid leave type: ").strip()
-
-    # Handle empty or invalid number of days
-    while True:
-        days_input = input("Enter the number of days: ").strip()
-        if not days_input.isdigit():
-            print("Error: Please enter a valid number.")
-        else:
-            days = int(days_input)
-            if days > 0:
-                break
-            else:
-                print("Error: Number of days must be greater than zero.")
-
-    # Input for start and end dates
+    create_database()
+    empl_id = input("Enter your Employee ID: ").strip()
+    leave_type = input("Enter leave type: ").strip()
+    days = int(input("Enter number of days: ").strip())
     start_date = input("Enter leave start date (YYYY-MM-DD): ").strip() + "T09:00:00"
     end_date = input("Enter leave end date (YYYY-MM-DD): ").strip() + "T17:00:00"
 
-    leave_application(empl_id, leave_type, days, start_date, end_date)
+    apply_leave(empl_id, leave_type, days, start_date, end_date)
     check_leave_balance(empl_id)
