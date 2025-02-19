@@ -5,20 +5,21 @@ def main():
 
     name = registration.employee_name()
     id_no = registration.employee_id_number()
+    department = input("Enter your department: ").strip()
 
     employee_id = registration.generate_employee_id(name, id_no)
-    print(f"Your auto-generated Employee ID is {employee_id}\n*Remember this ID for future references.*")
+    print(f"\nYour auto-generated Employee ID is {employee_id}")
+    print("*Remember this ID for future references.*")
 
-    # Add employee to the system
-    registration.employee_list.append(employee_id)
-
-    # Generate and store password
+    # Generate a random password
     password = registration.generate_password(12)
-    registration.employee_passwords[employee_id] = password
+    print(f"Your auto-generated password is: {password}")
+    print("*Keep it safe and DO NOT share with anyone.*")
 
-    print(f"Your auto-generated password is: {password}\n*Keep it safe and DO NOT share with anyone.*")
+    # Register the employee in the database
+    registration.register_employee(employee_id, name, department)
 
-    # Initialize leave balance for new employee
+    # Initialize leave balance in the database
     registration.register_leave_balance(employee_id)
 
 if __name__ == "__main__":
