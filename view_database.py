@@ -1,6 +1,36 @@
 import sqlite3
 
+
+def list_tables():
+    """Fetch and display all table names in the database."""
+    connection = sqlite3.connect('leave_request.db')
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        
+        if not tables:
+            print("No tables found in the database.")
+            return []
+        
+        print("\nAvailable tables:")
+        table_names = [table[0] for table in tables]
+        for name in table_names:
+            print(f"- {name}")
+        
+        return table_names
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return []
+    finally:
+        connection.close()
+
+
 def view_table(table_name):
+    #Fetch and display data from a specific table
+
     connection = sqlite3.connect('leave_request.db')
     cursor = connection.cursor
 
@@ -25,7 +55,12 @@ def view_table(table_name):
         connection.close()
 
 
-if __name__ = "__main__":
-    print("Available tables: employees, leave_requests")
-    table_name = input("Enter the table name to view data: ").strip()
-    view_table_data(table_name)
+if __name__ == "__main__":
+    tables = list_tables()
+
+    if tables:
+        table_name = input("\nEnter the table name you want to view: ").strip()
+        if table_name in tables:
+            view_table(table_name)
+        else:
+            print("Invalid table name. Please choose from the available tables list.")
