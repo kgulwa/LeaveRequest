@@ -57,7 +57,17 @@ def register_employee(employee_id, name, department):
     connection = sqlite3.connect('leave_request.db')
     cursor = connection.cursor()
 
+    # Check if employee already exists by their employee_id
+    cursor.execute('''SELECT * FROM employees WHERE id = ?''', (employee_id,))
+    existing_employee = cursor.fetchone()
+
+    if existing_employee:
+        print(f"Employee with ID {employee_id} already exists. Please log in.")
+        connection.close()
+        return
+
     try:
+        # Insert new employee if they do not already exist
         cursor.execute('''INSERT INTO employees (id, name, department) 
                           VALUES (?, ?, ?)''', (employee_id, name, department))
         
@@ -89,4 +99,6 @@ def main():
     register_employee(employee_id, name, department)
     register_leave_balance(employee_id)
 
-
+# Run the main function
+if __name__ == "__main__":
+    main()
