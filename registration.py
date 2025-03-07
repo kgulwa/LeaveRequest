@@ -1,6 +1,7 @@
 import string
 import secrets
 import sqlite3
+import hashlib
 
 # Leave entitlement dictionary
 leave_entitlement = {
@@ -9,6 +10,10 @@ leave_entitlement = {
     "Maternity Leave": 120,
     "Family Responsibility Leave": 3,
 }
+
+# Function to hash a password
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
 # Function to get employee name
 def employee_name():
@@ -36,7 +41,7 @@ def generate_employee_id(name, id_no):
 
 # Function to generate a random password
 def generate_password(length=12):
-    alphabet = string.ascii_letters + string.digits
+    alphabet = string.ascii_letters + string.digits + string.punctuation
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 # Function to initialize employee leave balance
@@ -53,7 +58,7 @@ def register_leave_balance(employee_id):
     print(f"Leave balance initialized for {employee_id}.")
 
 # Function to register an employee in the database
-def register_employee(employee_id, name, department):
+def register_employee(employee_id, name, department, password):
     connection = sqlite3.connect('leave_request.db')
     cursor = connection.cursor()
 
@@ -67,9 +72,11 @@ def register_employee(employee_id, name, department):
         return
 
     try:
-        # Insert new employee if they do not already exist
-        cursor.execute('''INSERT INTO employees (id, name, department) 
-                          VALUES (?, ?, ?)''', (employee_id, name, department))
+        hashed_password = hash_password(password)  # Hash password before storing
+
+        # Insert new employee with hashed password
+        cursor.execute('''INSERT INTO employees (id, name, department, password) 
+                          VALUES (?, ?, ?, ?)''', (employee_id, name, department, hashed_password))
         
         connection.commit()
         print(f"Employee {employee_id} registered successfully.")
@@ -96,7 +103,7 @@ def main():
     print("*Keep it safe and DO NOT share with anyone.*")
 
     # Register the employee and their leave balance
-    register_employee(employee_id, name, department)
+    register_employee(employee_id, name, department, password)
     register_leave_balance(employee_id)
 
 # Run the main function
