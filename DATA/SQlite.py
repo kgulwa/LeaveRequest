@@ -8,12 +8,13 @@ def recreate_employees_table():
     # Drop the existing employees table if it exists
     cursor.execute('DROP TABLE IF EXISTS employees')
 
-    # Recreate the employees table with the correct schema
+    # Recreate the employees table with an added password column
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS employees (
-            id TEXT PRIMARY KEY,  -- Change id from INTEGER to TEXT
+            id TEXT PRIMARY KEY,  -- Employee ID
             name TEXT NOT NULL,
-            department TEXT NOT NULL
+            department TEXT NOT NULL,
+            password TEXT NOT NULL  -- New column for storing hashed passwords
         )
     ''')
 
@@ -46,7 +47,7 @@ def recreate_leave_requests_table():
             days_requested INTEGER,
             start_date TEXT,
             end_date TEXT,
-            days_remaining INTEGER,  -- Adding the 'days_remaining' column
+            days_remaining INTEGER,
             FOREIGN KEY(employee_id) REFERENCES employees(id)
         )
     ''')
@@ -65,5 +66,5 @@ def recreate_leave_requests_table():
 
 # Run both functions to recreate tables
 if __name__ == "__main__":
-    recreate_employees_table()  # Recreate employees table
-    recreate_leave_requests_table()  # Recreate leave_requests table
+    recreate_employees_table()
+    recreate_leave_requests_table()
