@@ -1,32 +1,23 @@
 import sqlite3
 
 def recreate_employees_table():
-    # Connect to the SQLite database
     connection = sqlite3.connect('leave_request.db')
     cursor = connection.cursor()
 
-    # Drop the existing employees table if it exists
+    # Drop the existing table
     cursor.execute('DROP TABLE IF EXISTS employees')
 
-    # Recreate the employees table with an added password column
+    # Recreate the table with a password column
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS employees (
-            id TEXT PRIMARY KEY,  -- Employee ID
+            id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             department TEXT NOT NULL,
-            password TEXT NOT NULL  -- New column for storing hashed passwords
+            password TEXT NOT NULL  -- Add password column
         )
     ''')
 
     connection.commit()
-
-    # Verify the schema of the employees table
-    cursor.execute("PRAGMA table_info(employees);")
-    schema = cursor.fetchall()
-    print("\nTable Schema for 'employees' table:")
-    for column in schema:
-        print(column)
-
     connection.close()
     print("Table 'employees' recreated successfully.")
 
