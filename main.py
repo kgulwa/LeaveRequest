@@ -13,10 +13,12 @@ def main():
             register()
             break
         elif choice == "2":
-            login_user()
+            if not login_user():
+                print("\nRedirecting to registration...\n")
+                register()  # Offer registration if login fails
             break
         else:
-            print("Invalid input. Please enter 1 or 2.")
+            print("❌ Invalid input. Please enter 1 or 2.")
 
 def register():
     print("\n--- Employee Registration ---")
@@ -26,11 +28,11 @@ def register():
     department = input("Enter your department: ").strip()
 
     employee_id = registration.generate_employee_id(name, id_no)
-    print(f"\nYour auto-generated Employee ID is {employee_id}")
+    print(f"\n✅ Your auto-generated Employee ID is {employee_id}")
     print("*Remember this ID for future reference.*")
 
     password = registration.generate_password(12)
-    print(f"Your auto-generated password is: {password}")
+    print(f"✅ Your auto-generated password is: {password}")
     print("*Keep it safe and DO NOT share with anyone.*")
 
     # Register employee
@@ -40,13 +42,7 @@ def register():
     registration.register_leave_balance(employee_id)
 
 def login_user():
-    print("\n--- Employee Login ---")
-    employee_id = input("Enter your Employee ID: ").strip()
-    
-    if login.authenticate_user(employee_id):
-        print(f"Welcome, {employee_id}!")
-    else:
-        print("Invalid Employee ID. Please try again or register.")
+    return login.login_employee()  # Use the correct function name
 
 if __name__ == "__main__":
     main()
